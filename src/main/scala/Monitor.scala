@@ -51,7 +51,7 @@ class Monitor(operationMode: OperationMode, numOfNetworks: Int) extends Actor {
             val updatedReportData = operationMode match {
                 case Run => reportData.copy(AgentCharacteristics = Vector.empty)
                 case Debug =>
-                    //caseClassToString(reportData)
+                    caseClassToString(reportData)
                     buildingTimer.stop(s"Network building took")
                     reportData
             }
@@ -71,6 +71,7 @@ class Monitor(operationMode: OperationMode, numOfNetworks: Int) extends Actor {
             //println(reportData)
             operationMode match {
                 case Debug =>
+                    //caseClassToString(reportData)
                     val networkName = sender().path.name
                     val existingData = data(networkName)
                     val updatedRoundReports = existingData.RoundReport :+ reportData
@@ -87,7 +88,7 @@ class Monitor(operationMode: OperationMode, numOfNetworks: Int) extends Actor {
 
             operationMode match {
                 case Debug =>
-                    runningTimer.stop(s"Network was running for")
+                    runningTimer.stop(s"\nNetwork was running for")
                     val updatedData = existingData.copy(FinalReport = reportData)
                     data = data + (networkName -> updatedData)
                     val agentCharacteristics = reportData.AgentCharacteristics

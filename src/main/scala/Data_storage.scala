@@ -83,10 +83,10 @@ object NetworkJsonProtocol extends DefaultJsonProtocol {
 
     // Other formats using the automatic generation methods provided by DefaultJsonProtocol
     implicit val agentCharacteristicsItemFormat: RootJsonFormat[AgentCharacteristicsItem] = jsonFormat6(AgentCharacteristicsItem.apply)
-    implicit val initialReportDataFormat: RootJsonFormat[InitialReportData] = jsonFormat5(InitialReportData)
-    implicit val roundReportDataFormat: RootJsonFormat[RoundReportData] = jsonFormat9(RoundReportData)
-    implicit val finalReportDataFormat: RootJsonFormat[FinalReportData] = jsonFormat2(FinalReportData)
-    implicit val networkDataFormat: RootJsonFormat[NetworkData] = jsonFormat3(NetworkData)
+    implicit val initialReportDataFormat: RootJsonFormat[InitialReportData] = jsonFormat5(InitialReportData.apply)
+    implicit val roundReportDataFormat: RootJsonFormat[RoundReportData] = jsonFormat9(RoundReportData.apply)
+    implicit val finalReportDataFormat: RootJsonFormat[FinalReportData] = jsonFormat2(FinalReportData.apply)
+    implicit val networkDataFormat: RootJsonFormat[NetworkData] = jsonFormat3(NetworkData.apply)
 }
 
 

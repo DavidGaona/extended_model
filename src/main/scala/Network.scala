@@ -30,6 +30,7 @@ class Network(minNumberOfNeighbors: Int, degreeDistributionParameter: Double, st
     var pendingResponses: Int = 0
     var shouldContinue: Boolean = false
     var roundData: Array[Double] = Array.fill(8)(0)
+    var roundAgentData: Array[(Int, Double, Double)] = Array.empty
     var totalAttractiveness: Double = 0.0 // Storing the total attractiveness
 
     implicit val timeout: Timeout = Timeout(60.seconds)
@@ -38,6 +39,7 @@ class Network(minNumberOfNeighbors: Int, degreeDistributionParameter: Double, st
 
     def empty: Receive = {
         case BuildNetwork(numberOfAgents) =>
+            roundAgentData = Array.fill(numberOfAgents)((0, 0.0, 0.0))
             context.become(building)
             //println("Building network...")
             self ! AddAgent(numberOfAgents)
@@ -48,7 +50,7 @@ class Network(minNumberOfNeighbors: Int, degreeDistributionParameter: Double, st
             val newAgent = context.actorOf(Props(new Agent(stopThreshold, distribution)), s"Agent$remainingAgentsToAdd")
             agents = agents + (newAgent -> (0, minNumberOfNeighbors * (degreeDistributionParameter - 2)))
 
-            def pickAgentBasedOnAttractiveness(excludedAgents: Set[ActorRef] = Set.empty): ActorRef = {
+            def pickAgentBasedOnAttractiveness(excludedAgents: Set[ActorRef] = Set(newAgent)): ActorRef = {
                 val filteredAgents = agents.filterNot { case (agent, _) => excludedAgents.contains(agent) }
 
                 if (filteredAgents.isEmpty) {
@@ -69,11 +71,12 @@ class Network(minNumberOfNeighbors: Int, degreeDistributionParameter: Double, st
                 filteredAgents.keys.head
             }
 
-
             var chosenNeighbors = Set.empty[ActorRef]
             for (_ <- 1 to minNumberOfNeighbors) {
                 val newNeighbor = pickAgentBasedOnAttractiveness(chosenNeighbors)
-                chosenNeighbors += newNeighbor
+                if (newNeighbor != newAgent) {
+                    chosenNeighbors += newNeighbor
+                }
             }
 
             chosenNeighbors.foreach { neighbor =>
@@ -132,17 +135,33 @@ class Network(minNumberOfNeighbors: Int, degreeDistributionParameter: Double, st
                 agent ! UpdateConfidence
             }
 
-        case ConfidenceUpdated(hasNextIter, confidence, opinion) =>
-
+        case ConfidenceUpdated(hasNextIter, confidence, opinion, belief) =>
+            roundAgentData(pendingResponses - 1) = (
+                sender().path.name.stripPrefix("Agent").toInt,
+                roundToNDecimals(belief, 4),
+                roundToNDecimals(confidence, 4)
+            )
             pendingResponses -= 1
             if (hasNextIter) {
                 shouldContinue = true
             }
 
+
             roundData(opinion) += confidence
             roundData(opinion + 4) += 1
 
             if (pendingResponses == 0) {
+                val sortedRoundAgentData = roundAgentData.sortBy(_._1)
+                val groupedBeliefs = sortedRoundAgentData.grouped(25).map {
+                    group => group.map(_._2).mkString(", ")
+                }.mkString(",\n")
+                val groupedConfidences = sortedRoundAgentData.grouped(25).map {
+                    group => group.map(_._3).mkString(", ")
+                }.mkString(",\n")
+
+                println(s"\nRound${currentRound}:")
+                println(s"($groupedBeliefs)")
+                println(s"($groupedConfidences)")
                 val roundDataSend = RoundReportData(
                     currentRound,
                     roundData(0),
@@ -157,7 +176,7 @@ class Network(minNumberOfNeighbors: Int, degreeDistributionParameter: Double, st
 
                 // Send the round data
                 monitor ! RoundReport(roundDataSend)
-                
+
                 // Stop if threshold stop condition is met or more than 2001 iterations have happened
                 if (shouldContinue && currentRound < 2001) {
                     // Reset round data

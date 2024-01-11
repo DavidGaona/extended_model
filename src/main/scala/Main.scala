@@ -55,15 +55,19 @@ case class CreateNetwork
 
 
 object Mains extends App {
-    val numOfNetworks = 300
+    val numOfNetworks = 1
     val system = ActorSystem("original")
-    val monitor = system.actorOf(Props(new Monitor(Run, numOfNetworks * 10)), "Monitor")
+    val monitor = system.actorOf(Props(new Monitor(Debug, numOfNetworks * 10)), "Monitor")
     //val listenerActor = system.actorOf(Props(new DeadLetterListener), "Listener")
 
-    for (j <- 1 to 10) {
-        for (i <- 1 to numOfNetworks) {
-            monitor ! CreateNetwork(s"Network${i}_density${j}", 1000, j, 0.001, 2.5, Uniform)
-        }
+//    for (j <- 1 to 10) {
+//        for (i <- 1 to numOfNetworks) {
+//            monitor ! CreateNetwork(s"Network${i}_density${j}", 1000, j, 0.001, 2.5, Uniform)
+//        }
+//    }
+
+    for (i <- 1 to numOfNetworks) {
+        monitor ! CreateNetwork(s"Network${i}_density${5}", 25, 2, 0.001, 2.5, Uniform)
     }
 
 
